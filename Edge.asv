@@ -1,0 +1,22 @@
+classdef Edge
+
+    
+    properties
+        index
+        targets
+        length
+    end
+    
+    methods
+        function obj = Edge(index, targets)
+            obj.index = index;
+            obj.targets = targets;
+          
+        end
+        
+        function draw(obj, ax)
+            
+        end
+    end
+end
+
