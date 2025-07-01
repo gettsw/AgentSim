@@ -7,8 +7,8 @@ classdef AvoidedTarget < Target
         R0_val
         t0_val
         A_val
-        B_val
         travelTime
+        J
 
     end
 
@@ -16,26 +16,24 @@ classdef AvoidedTarget < Target
         function obj = AvoidedTarget(baseTarget, t0, edge)
             obj@Target(baseTarget.index, baseTarget.position); 
             
-            obj.R = baseTarget.R;
-            obj.A = baseTarget.A;
+            obj.R0_val = baseTarget.R;
+            obj.A_val = baseTarget.A;
             obj.B = baseTarget.B;
             obj.t0 = t0;
 
-            travelTime = edge.length / 80;
+            travelTime = edge.length / 80; % The denominator is the speed from the Sketch file
 
         end
 
-        function [tz, dwellTime] = RHCSimpleOptimizer(obj)
+        function RHCSimpleOptimizer(obj, H)
            
-            t0 = obj.t0_val;
             A = obj.A_val;
-            B = obj.B_val;
             R0 = obj.R0_val;
 
-            R_s = R0 + A*(t - t0);
-            
+       
+            obj.J = (.5)*A*H*H + R0*H
 
-            %solve logic
+            
         end
         
         

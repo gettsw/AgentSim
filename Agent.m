@@ -144,22 +144,6 @@ classdef Agent < handle
            % Optimize Control decisions
             
         
-            % Choose next target
-            next_idx = neighbors(randi(num_targets));
-            targetPos = targets(next_idx).position;
-            obj.current_target_idx = next_idx;
-
-           for i=1:neighbors
-               classedTarget = Target.empty(num_targets, 0);
-               if(neighbors(i).residingAgents == [])
-                    if(neighbors(i).arrivalTimes == []) % Visited Target
-                       classedTarget = VisitedTarget(i, nieghbors(i).position)
-                    
-                        
-                    end
-
-               end
-           end
             
         end
 

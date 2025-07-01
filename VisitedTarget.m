@@ -12,6 +12,7 @@ classdef VisitedTarget < Target
         travelTime
         tbar_i
         tbar_i1
+        J
 
     end
 
@@ -47,7 +48,7 @@ classdef VisitedTarget < Target
 
             R_s = R_raw *heaviside(obj.tz - t);
 
-            %solve logic
+           
         end
 
         
