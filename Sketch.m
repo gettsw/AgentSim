@@ -116,11 +116,8 @@ while ishandle(mainFig)
                         agent.stepIndex = agent.stepIndex + 1;
                     else
                         agent.movementActive = false;
-<<<<<<< HEAD
                         agent.dwellTime = rand()*2 + 1; % Calculate Random Dwell time
-=======
                         agent.dwellTime = rand()*2 + 1;
->>>>>>> 3a3695fd3f050358983bb6025a022c97100794b5
                     end
                 elseif agent.dwellTime > 0
                     agent.dwellTime = agent.dwellTime - dt;

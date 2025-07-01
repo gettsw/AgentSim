@@ -131,7 +131,6 @@ classdef Agent < handle
                 targetPos = [];
                 return;
             end
-<<<<<<< HEAD
             
             % Define the spacial horizon for the agent
             cluster = [];
@@ -144,9 +143,6 @@ classdef Agent < handle
 
            % Optimize Control decisions
             
-
-
-=======
         
             % Choose next target
             next_idx = neighbors(randi(num_targets));
@@ -164,7 +160,6 @@ classdef Agent < handle
 
                end
            end
->>>>>>> 3a3695fd3f050358983bb6025a022c97100794b5
             
         end
 
