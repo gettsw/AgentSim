@@ -1,41 +1,35 @@
 classdef AvoidedTarget < Target
-    
-
     properties
-        tz % event times
-        dwellTime
-        R0_val
-        t0_val
-        A_val
-        travelTime
-        J
-
+        t0           % Reference time
+        edge         % Connection edge
     end
 
     methods
         function obj = AvoidedTarget(baseTarget, t0, edge)
-            obj@Target(baseTarget.index, baseTarget.position); 
+            % Unconditional superclass constructor call (MUST BE FIRST)
+            obj = obj@Target(baseTarget.index, baseTarget.position);
             
-            obj.R0_val = baseTarget.R;
-            obj.A_val = baseTarget.A;
-            obj.B = baseTarget.B;
+            % Copy all properties from base target
+            props = properties(baseTarget);
+            for i = 1:length(props)
+                if isprop(obj, props{i})
+                    obj.(props{i}) = baseTarget.(props{i});
+                end
+            end
+
+            % Set avoidance-specific properties
             obj.t0 = t0;
-
-            travelTime = edge.length / 80; % The denominator is the speed from the Sketch file
-
+            obj.edge = edge;
         end
 
-        function RHCSimpleOptimizer(obj, H)
-           
-            A = obj.A_val;
-            R0 = obj.R0_val;
-
-       
-            obj.J = (.5)*A*H*H + R0*H
-
-            
+        % Zero-argument constructor (optional, only needed if you explicitly call AvoidedTarget())
+        function obj = AvoidedTarget()
+            obj = obj@Target();  % Zero-argument superclass call
         end
-        
-        
+
+        function J = objective(obj, ~)
+            % Simplified objective for avoided targets
+            J = obj.R; % Just use current uncertainty
+        end
     end
 end

@@ -1,56 +1,63 @@
 classdef VisitedTarget < Target
-    
-
     properties
-
-        tz % event times
-        dwellTime
-        R0_val
-        t0_val
-        A_val
-        B_val
-        travelTime
-        tbar_i
-        tbar_i1
-        J
-
+        t0           % Time when agent arrived at target
+        tz           % Time when agent departs from target  
+        dwellTime    % Time spent at target
+        R0_val       % Initial uncertainty value
+        t0_val       % Initial time value
+        A_val        % Uncertainty growth rate
+        B_val        % Uncertainty reduction rate
+        travelTime   % Time taken to travel to this target
+        J_i          % Objective function value
     end
 
     methods
         function obj = VisitedTarget(baseTarget, t0, edge)
-            obj@Target(baseTarget.index, baseTarget.position); 
+            % Unconditional superclass constructor call
+            obj = obj@Target(baseTarget.index, baseTarget.position);
             
-            obj.R = baseTarget.R;
-            obj.A = baseTarget.A;
-            obj.B = baseTarget.B;
+            % Copy all properties from baseTarget
+            props = properties(baseTarget);
+            for i = 1:length(props)
+                if isprop(obj, props{i})
+                    obj.(props{i}) = baseTarget.(props{i});
+                end
+            end
+
+            % Set visit-specific properties
             obj.t0 = t0;
-
-            travelTime = edge.length / 80;
-
+            obj.t0_val = t0;
+            obj.R0_val = baseTarget.R;
+            obj.A_val = baseTarget.A;
+            obj.B_val = baseTarget.B;
+            obj.travelTime = edge.length / 80; % Travel time = distance/speed
         end
 
-        function [tz, dwellTime] = RHCSimpleOptimizer(obj)
-            t_arr = t0 + travelTime;
-            t0 = obj.t0_val;
-            A = obj.A_val;
-            B = obj.B_val;
-            R0 = obj.R0_val;
+        function J = objective(obj, dwellTime)
+            % Validate input
+            if dwellTime <= 0
+                error('dwellTime must be positive');
+            end
 
+            % Calculate important time points
+            t_arr = obj.t0_val + obj.travelTime;
+            t_z_val = t_arr + dwellTime;
+
+            % Symbolic calculation
+            syms t;
             S = (t - t_arr) * heaviside(t - t_arr);
-            R_raw = R0 + A*(t - t0) - B * S; 
+            R_raw = obj.R0_val + obj.A_val*(t - obj.t0_val) - obj.B_val * S;
+            R_s = R_raw * heaviside(t_z_val - t);
 
-            solutions = solve(R_raw == 0, 'Real', true);
+            % Numeric integration
+            t_vals = linspace(obj.t0_val, t_z_val, 500);
+            R_vals = double(subs(R_s, t, t_vals));
+            J = (1/(obj.travelTime + dwellTime)) * trapz(t_vals, R_vals);
 
-            tz_candidates = double(solutions);
-            tz_candidates = tz_candidates(tz_candidates >= t0);
-
-            obj.tz = min(tz_candidates);
-
-            R_s = R_raw *heaviside(obj.tz - t);
-
-           
+            % Store results
+            obj.tz = t_z_val;
+            obj.dwellTime = dwellTime;
+            obj.J_i = J;
         end
-
-        
     end
 end

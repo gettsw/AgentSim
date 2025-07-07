@@ -1,5 +1,4 @@
 classdef Agent < handle
-    
     properties
         index          % Unique identifier
         position       % [x,y] coordinates
@@ -109,12 +108,14 @@ classdef Agent < handle
             % Choose next target randomly from neighbors
             next_idx = neighbors(randi(length(neighbors)));
             targetPos = targets(next_idx).position;
-           obj.current_target_idx = next_idx;
+            obj.current_target_idx = next_idx;
         end
 
-        function [targetPos, current_idx] = RHCSimple(obj, targets, adjMatrix)
+        function [targetPos, current_idx, optimalH] = RHCSimple(obj, targets, adjMatrix, simTime, edges)
             num_targets = length(targets);
             current_idx = -1;
+            
+            % Find current target index the agent is on
             for i = 1:num_targets
                 if norm(obj.position - targets(i).position) < 1e-2
                     current_idx = i;
@@ -129,23 +130,82 @@ classdef Agent < handle
             neighbors = find(adjMatrix(current_idx, :));
             if isempty(neighbors)
                 targetPos = [];
+                optimalH = [];
                 return;
             end
+        
+            % Initialize variables for tracking best cluster
+            minJ = inf;
+            bestCluster = [];
+            bestNeighborIdx = [];
+            optimalH = [];
             
-            % Define the spacial horizon for the agent
-            cluster = [];
-            for i = 1:neighbors
-                if targets(neighbors(i)).redsidingAgents ~= Agent.empty(0,0)
-                    cluster(end +1) = neighbors(i);
+            % Evaluate each possible neighbor as the next visited target
+            for i = 1:length(neighbors)
+                try
+                    classedTargets = Target.empty();  % Reset for each neighbor
+                    
+                    % === Create VisitedTarget for current neighbor ===
+                    edge = obj.findEdge(current_idx, neighbors(i), edges);
+                    
+                    if ~isempty(targets(neighbors(i))) && ~isempty(edge)
+                        visitedTarget = VisitedTarget(targets(neighbors(i)), simTime, edge);
+                        classedTargets = [classedTargets, visitedTarget];
+                    else
+                        continue;  % Skip if invalid target or edge
+                    end
+                    
+                    % === Create AvoidedTargets for other neighbors ===
+                    for j = 1:length(neighbors)
+                        if j ~= i
+                            edge_j = obj.findEdge(current_idx, neighbors(j), edges);
+                            if ~isempty(edge_j)
+                                avoidedTarget = AvoidedTarget(targets(neighbors(j)), simTime, edge_j);
+                                classedTargets = [classedTargets, avoidedTarget];
+                            end
+                        end
+                    end
+                    
+                    % === Optimize dwell time ===
+                    if ~isempty(classedTargets)
+                        currentCluster = Neighborhood(classedTargets);
+                        [currentH, currentJ] = currentCluster.optimizeDwellTime();
+                        
+                        if currentJ < minJ
+                            minJ = currentJ;
+                            bestNeighborIdx = neighbors(i);
+                            optimalH = currentH;
+                        end
+                    end
+                    
+                catch ME
+                    warning('Error evaluating neighbor %d: %s', neighbors(i), ME.message);
+                    continue;
                 end
             end
-                
-
-           % Optimize Control decisions
-            
         
-            
+            % Return the optimal target position
+            if ~isempty(bestCluster)
+                targetPos = targets(bestNeighborIdx).position;
+                current_idx = bestNeighborIdx;
+            else
+                targetPos = [];
+                optimalH = [];
+            end
         end
-
+    end
+    
+    methods (Access = private)
+        function edge = findEdge(obj, sourceIdx, destIdx, edges)
+            % Helper function to find edge between two targets
+            for e = edges
+                if (e.targets(1).index == sourceIdx && e.targets(2).index == destIdx) || ...
+                   (e.targets(1).index == destIdx && e.targets(2).index == sourceIdx)
+                    edge = e;
+                    return;
+                end
+            end
+            error("Edge between targets %d and %d not found.", sourceIdx, destIdx);
+        end
     end
 end

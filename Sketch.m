@@ -1,9 +1,9 @@
 clear; close all; clc;
 
 %% Parameters
-num_targets = 3;
+num_targets = 6;
 num_agents = 2;
-max_edges = 3;
+max_edges = 8;
 fps = 60;
 dt = 1 / fps;
 
@@ -116,13 +116,15 @@ while ishandle(mainFig)
                         agent.stepIndex = agent.stepIndex + 1;
                     else
                         agent.movementActive = false;
-                        agent.dwellTime = rand()*2 + 1; % Calculate Random Dwell time
-                        agent.dwellTime = rand()*2 + 1;
+                        % Get optimal dwell time using RHC
+                        [~, ~, optimalH] = agent.RHCSimple(targets, adjMatrix, simTime, edges);
+                        agent.dwellTime = optimalH; % Use optimal dwell time instead of random
                     end
                 elseif agent.dwellTime > 0
                     agent.dwellTime = agent.dwellTime - dt;
                 else
-                    [targetPos, ~] = agent.randomChoice(targets, adjMatrix);
+                    % Use RHC to choose next target instead of random choice
+                    [targetPos, ~] = agent.RHCSimple(targets, adjMatrix, simTime, edges);
                     if ~isempty(targetPos)
                         delta = targetPos - agent.position;
                         agent.orientation = atan2(delta(2), delta(1));
@@ -163,7 +165,6 @@ while ishandle(mainFig)
         end
         disp('Fast forward complete.');
         assignin('base', 'fastForwardRequested', false); % Reset flag
-        
     end
 
     % === Normal visual simulation step ===
@@ -175,12 +176,15 @@ while ishandle(mainFig)
                 agent.stepIndex = agent.stepIndex + 1;
             else
                 agent.movementActive = false;
-                agent.dwellTime = rand()*2 + 1;
+                % Get optimal dwell time using RHC
+                [~, ~, optimalH] = agent.RHCSimple(targets, adjMatrix, simTime, edges);
+                agent.dwellTime = optimalH; % Use optimal dwell time instead of random
             end
         elseif agent.dwellTime > 0
             agent.dwellTime = agent.dwellTime - dt;
         else
-            [targetPos, ~] = agent.randomChoice(targets, adjMatrix);
+            % Use RHC to choose next target instead of random choice
+            [targetPos, ~] = agent.RHCSimple(targets, adjMatrix, simTime, edges);
             if ~isempty(targetPos)
                 delta = targetPos - agent.position;
                 agent.orientation = atan2(delta(2), delta(1));
