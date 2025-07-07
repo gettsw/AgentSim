@@ -1,35 +1,32 @@
 classdef AvoidedTarget < Target
     properties
-        t0           % Reference time
-        edge         % Connection edge
+        tz             % Virtual "event" time: end of horizon
+        R0_val
+        A_val
+        J_i              % Accumulated uncertainty
     end
 
     methods
-        function obj = AvoidedTarget(baseTarget, t0, edge)
-            % Unconditional superclass constructor call (MUST BE FIRST)
-            obj = obj@Target(baseTarget.index, baseTarget.position);
+        function obj = AvoidedTarget(baseTarget, t0)
+            obj@Target(baseTarget.index, baseTarget.position);
             
-            % Copy all properties from base target
-            props = properties(baseTarget);
-            for i = 1:length(props)
-                if isprop(obj, props{i})
-                    obj.(props{i}) = baseTarget.(props{i});
-                end
-            end
-
-            % Set avoidance-specific properties
-            obj.t0 = t0;
-            obj.edge = edge;
+            obj.R0_val = baseTarget.R;
+            obj.A_val = baseTarget.A;
+            
+            
         end
 
-        % Zero-argument constructor (optional, only needed if you explicitly call AvoidedTarget())
-        function obj = AvoidedTarget()
-            obj = obj@Target();  % Zero-argument superclass call
-        end
+        function J = objective(obj, H)
+            % === Inputs ===
+            A = obj.A_val;
+            R0 = obj.R0_val;
+            
 
-        function J = objective(obj, ~)
-            % Simplified objective for avoided targets
-            J = obj.R; % Just use current uncertainty
+    
+            % === Closed-form integration result ===
+            J = (1 / H) * (R0 * H + 0.5 * A * H^2);
+
+            obj.J_i = J;  % Store in object
         end
     end
 end
