@@ -117,14 +117,16 @@ while ishandle(mainFig)
                     else
                         agent.movementActive = false;
                         % Get optimal dwell time using RHC
-                        [~, ~, optimalH] = agent.RHCSimple(targets, adjMatrix, simTime, edges);
+                        % [~, ~, optimalH] = agent.RHCSimple(targets, adjMatrix, simTime, edges); 
+                        optimalH = 1 + (3-1)*rand(); % Random Dwell time
                         agent.dwellTime = optimalH; % Use optimal dwell time instead of random
                     end
                 elseif agent.dwellTime > 0
                     agent.dwellTime = agent.dwellTime - dt;
                 else
                     % Use RHC to choose next target instead of random choice
-                    [targetPos, ~] = agent.RHCSimple(targets, adjMatrix, simTime, edges);
+                    % [targetPos, ~] = agent.RHCSimple(targets, adjMatrix, simTime, edges);
+                    targetPos = agent.randomChoice(targets, adjMatrix);
                     if ~isempty(targetPos)
                         delta = targetPos - agent.position;
                         agent.orientation = atan2(delta(2), delta(1));
@@ -177,14 +179,16 @@ while ishandle(mainFig)
             else
                 agent.movementActive = false;
                 % Get optimal dwell time using RHC
-                [~, ~, optimalH] = agent.RHCSimple(targets, adjMatrix, simTime, edges);
+                % [~, ~, optimalH] = agent.RHCSimple(targets, adjMatrix, simTime, edges);
+                optimalH = 1 + (3-1)*rand(); % Random Dwell time
                 agent.dwellTime = optimalH; % Use optimal dwell time instead of random
             end
         elseif agent.dwellTime > 0
             agent.dwellTime = agent.dwellTime - dt;
         else
             % Use RHC to choose next target instead of random choice
-            [targetPos, ~] = agent.RHCSimple(targets, adjMatrix, simTime, edges);
+            % [targetPos, ~] = agent.RHCSimple(targets, adjMatrix, simTime, edges);
+            targetPos = agent.randomChoice(targets, adjMatrix);
             if ~isempty(targetPos)
                 delta = targetPos - agent.position;
                 agent.orientation = atan2(delta(2), delta(1));

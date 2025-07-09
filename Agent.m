@@ -142,6 +142,12 @@ classdef Agent < handle
             
             % Evaluate each possible neighbor as the next visited target
             for i = 1:length(neighbors)
+
+                % === Skip neighbors that have residing agents ===
+                if ~isempty(targets(neighborIdx).residingAgents)
+                    continue;
+                end
+
                 try
                     classedTargets = Target.empty();  % Reset for each neighbor
                     
@@ -188,7 +194,7 @@ classdef Agent < handle
             if ~isempty(bestCluster)
                 targetPos = targets(bestNeighborIdx).position;
                 current_idx = bestNeighborIdx;
-            else
+            edlse
                 targetPos = [];
                 optimalH = [];
             end
