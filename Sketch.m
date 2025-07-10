@@ -43,14 +43,25 @@ xlim([0 10]);
 ylim([0 10]);
 
 %% Target Placement
+positions = {
+    [10,10];
+    [10,14];
+    [10,18];
+    [18,10];
+    [18,14];
+    [18,18];
+    };
+i = 1;
 targets = Target.empty(num_targets, 0);
-minDist = 15;
+minDist = 0.1;
 placed = 0;
 while placed < num_targets
-    pos = [rand()*80 + 10, rand()*80 + 10];
+    pos = positions{i};
+    disp(pos)
     valid = all(arrayfun(@(t) norm(pos - t.position) >= minDist, targets(1:placed)));
     if valid
         placed = placed + 1;
+        i = i + 1;
         targets(placed) = Target(placed, pos);
     end
 end
