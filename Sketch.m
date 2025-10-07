@@ -1,10 +1,10 @@
 clear; close all; clc;
 
 %% Parameters
-num_targets = 6;
-num_agents = 2;
-max_edges = 8;
-fps = 60;
+num_targets = 3;
+num_agents = 1;
+max_edges = 3;
+fps = 50;
 dt = 1 / fps;
 
 %% Fast Forward Flag
@@ -43,6 +43,7 @@ xlim([0 10]);
 ylim([0 10]);
 
 %% Target Placement
+
 targets = Target.empty(num_targets, 0);
 minDist = 15;
 placed = 0;
@@ -125,8 +126,8 @@ while ishandle(mainFig)
                     agent.dwellTime = agent.dwellTime - dt;
                 else
                     % Use RHC to choose next target instead of random choice
-                    % [targetPos, ~] = agent.RHCSimple(targets, adjMatrix, simTime, edges);
-                    targetPos = agent.randomChoice(targets, adjMatrix);
+                    [targetPos, ~] = agent.RHCSimple(targets, adjMatrix, simTime, edges);
+                    % targetPos = agent.randomChoice(targets, adjMatrix);
                     if ~isempty(targetPos)
                         delta = targetPos - agent.position;
                         agent.orientation = atan2(delta(2), delta(1));
@@ -169,39 +170,53 @@ while ishandle(mainFig)
         assignin('base', 'fastForwardRequested', false); % Reset flag
     end
 
-    % === Normal visual simulation step ===
-    for a = 1:num_agents
+     % === Normal visual simulation step ===
+     for a = 1:num_agents
         agent = agents(a);
+    
         if agent.movementActive
+            % --- Moving along path ---
             if agent.stepIndex <= length(agent.xSteps)
                 agent.position = [agent.xSteps(agent.stepIndex), agent.ySteps(agent.stepIndex)];
                 agent.stepIndex = agent.stepIndex + 1;
             else
+                % --- Finished movement: stop & start dwell ---
                 agent.movementActive = false;
-                % Get optimal dwell time using RHC
-                % [~, ~, optimalH] = agent.RHCSimple(targets, adjMatrix, simTime, edges);
-                optimalH = 1 + (3-1)*rand(); % Random Dwell time
-                agent.dwellTime = optimalH; % Use optimal dwell time instead of random
+                % Do NOT replan yet — just start dwelling
+                % Keep the existing agent.dwellTime (already set before move)
             end
+    
         elseif agent.dwellTime > 0
+            % --- Still dwelling ---
             agent.dwellTime = agent.dwellTime - dt;
+    
         else
-            % Use RHC to choose next target instead of random choice
-            % [targetPos, ~] = agent.RHCSimple(targets, adjMatrix, simTime, edges);
-            targetPos = agent.randomChoice(targets, adjMatrix);
+            % --- Finished dwelling: plan next move ---
+            [targetPos, ~, optimalH] = agent.RHCSimple(targets, adjMatrix, simTime, edges);
+            %targetPos = agent.randomChoice(targets, adjMatrix);
+    
             if ~isempty(targetPos)
                 delta = targetPos - agent.position;
                 agent.orientation = atan2(delta(2), delta(1));
                 distance = norm(delta);
                 steps = max(ceil(distance / agent.speed * fps), 1);
+    
                 agent.xSteps = linspace(agent.position(1), targetPos(1), steps);
                 agent.ySteps = linspace(agent.position(2), targetPos(2), steps);
                 agent.stepIndex = 1;
+    
                 agent.movementActive = true;
+                agent.dwellTime = optimalH; % dwell for next target, after arrival
+                %optimalH = 1 + (6-1)*rand();
             end
         end
+    
+        % --- Always update graphics ---
         agent.updatePosition();
     end
+
+
+
 
     currentUncertainty = 0;
     for t = 1:num_targets
@@ -225,21 +240,22 @@ while ishandle(mainFig)
     timeHistory(currentIndex) = simTime;
     uncertaintyHistory(currentIndex) = currentUncertainty;
     currentIndex = currentIndex + 1;
-
+    
+    
     % Update Plot
     if mod(currentIndex, 5) == 0
-        if currentIndex > 2
-            tData = timeHistory(1:currentIndex-1);
-            uData = uncertaintyHistory(1:currentIndex-1);
-            integralData = (1 / simTime) * cumtrapz(tData(:), uData(:));
-            set(uncertaintyPlot, 'XData', tData, 'YData', integralData);
-            if tData(end) > xlim(uncertaintyAxes)*0.9
-                xlim(uncertaintyAxes, [0 tData(end)*1.1]);
-            end
-            if max(integralData) > ylim(uncertaintyAxes)*0.9
-                ylim(uncertaintyAxes, [0 max(integralData)*1.1]);
-            end
-        end
+         if currentIndex > 2
+             tData = timeHistory(1:currentIndex-1);
+             uData = uncertaintyHistory(1:currentIndex-1);
+             integralData = (1 / simTime) * cumtrapz(tData(:), uData(:));
+             set(uncertaintyPlot, 'XData', tData, 'YData', integralData);
+             if tData(end) > xlim(uncertaintyAxes)*0.9
+                 xlim(uncertaintyAxes, [0 tData(end)*1.1]);
+             end
+             if max(integralData) > ylim(uncertaintyAxes)*0.9
+                 ylim(uncertaintyAxes, [0 max(integralData)*1.1]);
+             end
+         end
     end
 
     drawnow limitrate;
